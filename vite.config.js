@@ -34,5 +34,5 @@ function feedRefreshPlugin() {
 
 export default defineConfig({
   plugins: [react(), feedRefreshPlugin()],
-  base: "/job-tracker/",
+  base: "/job-hunter/",
 });
