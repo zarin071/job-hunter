@@ -233,6 +233,11 @@ async function run() {
     emailType: emailTypeFromTitle(j.jobTitle),
   }));
 
+  // Prioritise India-based roles above the rest (score order preserved within each group)
+  const isIndiaJob = (j) =>
+    `${j.location} ${j.remoteType} ${j.tags.join(" ")}`.toLowerCase().includes("india");
+  feedJobs.sort((a, b) => Number(isIndiaJob(b)) - Number(isIndiaJob(a)));
+
   const topCount = feedJobs.filter((j) => j.tier === "top").length;
   const strongCount = feedJobs.filter((j) => j.tier === "strong").length;
   const monitorCount = feedJobs.filter((j) => j.tier === "monitor").length;
