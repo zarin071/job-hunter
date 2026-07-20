@@ -34,14 +34,39 @@ function indiaFirst(jobs) {
   return [...jobs].sort((a, b) => Number(isIndiaJob(b)) - Number(isIndiaJob(a)));
 }
 
+// The role archetypes Zarin is targeting. A job is bucketed into the first
+// specialist archetype it matches; otherwise it's a strong generalist role.
+const ARCHETYPES = ["Design Engineer", "Design Systems", "AI Product", "Generalist"];
+const ARCHETYPE_COLOR = {
+  "Design Engineer": "#3e7dc9",
+  "Design Systems": "#3ec97a",
+  "AI Product": "#a83ec9",
+  "Generalist": "#c98a3e",
+};
+
+function archetypeOf(job) {
+  if (job.archetype && ARCHETYPES.includes(job.archetype)) return job.archetype;
+  const t = `${job.role} ${(job.tags || []).join(" ")} ${job.matchReason || ""}`.toLowerCase();
+  if (/design engineer|design technologist|production react|ships production|front[- ]?end|typescript|\breact\b|code\/design/.test(t)) return "Design Engineer";
+  if (/design system|token|component library|primitives/.test(t)) return "Design Systems";
+  if (/\bai\b|\bllm\b|gen[- ]?ai|generative|conversational|prompt|ai[- ]native/.test(t)) return "AI Product";
+  return "Generalist";
+}
+
 export default function JobFeed({ onAddToTracker }) {
   const [added, setAdded] = useState({});
-  const top     = indiaFirst(FEED_JOBS.filter((j) => j.tier === "top"));
-  const strong  = indiaFirst(FEED_JOBS.filter((j) => j.tier === "strong"));
-  const monitor = indiaFirst(FEED_JOBS.filter((j) => j.tier === "monitor"));
+  const [archFilter, setArchFilter] = useState("All");
+
+  const archCounts = { All: FEED_JOBS.length };
+  ARCHETYPES.forEach((a) => (archCounts[a] = FEED_JOBS.filter((j) => archetypeOf(j) === a).length));
+
+  const visible = archFilter === "All" ? FEED_JOBS : FEED_JOBS.filter((j) => archetypeOf(j) === archFilter);
+  const top     = indiaFirst(visible.filter((j) => j.tier === "top"));
+  const strong  = indiaFirst(visible.filter((j) => j.tier === "strong"));
+  const monitor = indiaFirst(visible.filter((j) => j.tier === "monitor"));
 
   const totalSalaryJobs = FEED_JOBS.filter((j) => j.salary !== "Unlisted").length;
-  const topPick = top[0] || FEED_JOBS[0];
+  const topPick = indiaFirst(FEED_JOBS.filter((j) => j.tier === "top"))[0] || FEED_JOBS[0];
 
   const handleAdd = async (job) => {
     await onAddToTracker(job);
@@ -87,10 +112,42 @@ export default function JobFeed({ onAddToTracker }) {
         Sources: TopStartups · YC Work at a Startup · Greenhouse · Lovable Careers · Built In · UIUX Jobs Board · LinkedIn · Remotive
       </p>
 
+      {/* ── Archetype filter ── */}
+      <div className="-mt-4">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[#6b6759] mb-2">Filter by role type</p>
+        <div className="flex flex-wrap gap-2">
+          {["All", ...ARCHETYPES].map((a) => {
+            const active = archFilter === a;
+            const color = a === "All" ? "#e8e3d3" : ARCHETYPE_COLOR[a];
+            return (
+              <button
+                key={a}
+                onClick={() => setArchFilter(a)}
+                className="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
+                style={
+                  active
+                    ? { background: color, color: "#15140f", borderColor: color }
+                    : { borderColor: "#2e2c22", color: "#8a8578" }
+                }
+              >
+                {a} <span className="opacity-60">{archCounts[a] ?? 0}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* ── Tier sections ── */}
-      {[{ key: "top", jobs: top }, { key: "strong", jobs: strong }, { key: "monitor", jobs: monitor }].map(({ key, jobs }) => (
-        <TierSection key={key} tier={key} jobs={jobs} added={added} onAdd={handleAdd} />
-      ))}
+      {top.length + strong.length + monitor.length === 0 && (
+        <p className="text-sm text-[#6b6759] border border-dashed border-[#2e2c22] rounded-lg py-10 text-center">
+          No roles match this filter in today’s feed yet.
+        </p>
+      )}
+      {[{ key: "top", jobs: top }, { key: "strong", jobs: strong }, { key: "monitor", jobs: monitor }]
+        .filter(({ jobs }) => jobs.length > 0)
+        .map(({ key, jobs }) => (
+          <TierSection key={key} tier={key} jobs={jobs} added={added} onAdd={handleAdd} />
+        ))}
 
       {/* ── Weekly actions ── */}
       <WeeklyActions />
@@ -120,6 +177,7 @@ function TierSection({ tier, jobs, added, onAdd }) {
 
 function JobCard({ job, added, onAdd, tier }) {
   const cfg = TIER_CONFIG[tier];
+  const arch = archetypeOf(job);
 
   return (
     <div
@@ -142,6 +200,12 @@ function JobCard({ job, added, onAdd, tier }) {
             <p className="text-sm font-semibold">{job.company}</p>
             <span className="text-[#6b6759]">—</span>
             <p className="text-sm text-[#c4bfb0]">{job.role}</p>
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded font-medium whitespace-nowrap"
+              style={{ color: ARCHETYPE_COLOR[arch], background: ARCHETYPE_COLOR[arch] + "22" }}
+            >
+              {arch}
+            </span>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5 text-[11px] text-[#6b6759]">
             <span>{job.location}</span>
