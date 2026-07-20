@@ -25,7 +25,15 @@ const BOOST = [
   "ai", "llm", "figma", "react", "cursor", "tailwind", "framer",
   "design system", "design engineer", "startup", "interaction",
   "0 to 1", "zero to one", "founding", "staff", "lead", "principal",
+  // Archetype signals Zarin is targeting
+  "production react", "typescript", "token", "component library",
+  "conversational", "generative", "gen-ai", "genai", "b2b", "b2c",
 ];
+
+// Roles that clearly land in one of Zarin's four target archetypes get an
+// extra point so they rank above generic product-design listings.
+const TARGET_ARCHETYPE_RE =
+  /design engineer|design technologist|production react|ships production|design system|token|component library|conversational|gen[- ]?ai|generative|\bllm\b|ai[- ]native/;
 
 const BLOCKERS = [
   "game design", "gameplay", "3d artist", "cad designer", "autocad",
@@ -82,7 +90,19 @@ function scoreJob(j) {
   // India / APAC / worldwide boost
   if (INDIA_BOOST.some((loc) => geo.includes(loc))) pts++;
 
+  // Target-archetype boost (Design Engineer / Design Systems / AI Product)
+  if (TARGET_ARCHETYPE_RE.test(text)) pts++;
+
   return Math.min(pts, 10);
+}
+
+// Buckets a role into one of Zarin's four target archetypes.
+function archetypeFromJob(j) {
+  const text = `${j.jobTitle} ${stripHtml(j.jobExcerpt || j.jobDescription || "")}`.toLowerCase();
+  if (/design engineer|design technologist|production react|ships production|front[- ]?end|typescript|\breact\b/.test(text)) return "Design Engineer";
+  if (/design system|token|component library|primitives/.test(text)) return "Design Systems";
+  if (/\bai\b|\bllm\b|gen[- ]?ai|generative|conversational|prompt|ai[- ]native/.test(text)) return "AI Product";
+  return "Generalist";
 }
 
 function parseSalaryUSD(j) {
@@ -230,6 +250,7 @@ async function run() {
     },
     url: j.url,
     tags: tagsFromJob(j),
+    archetype: archetypeFromJob(j),
     emailType: emailTypeFromTitle(j.jobTitle),
   }));
 
