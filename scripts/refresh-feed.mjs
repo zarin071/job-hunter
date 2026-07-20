@@ -2,7 +2,7 @@
  * refresh-feed.mjs
  * Fetches live remote design roles from Jobicy's public API,
  * scores them against Zarin's profile, and writes src/data/feedData.js.
- * Runs on `npm run dev` start + every 12 hours while dev server is running.
+ * Runs on `npm run dev` start + once a month while dev server is running.
  */
 
 import { writeFileSync } from "fs";
