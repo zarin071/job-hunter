@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REFRESH_SCRIPT = path.join(__dirname, "scripts/refresh-feed.mjs");
-const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
 
 function feedRefreshPlugin() {
   function runRefresh(label) {
@@ -21,10 +21,10 @@ function feedRefreshPlugin() {
       // Refresh immediately when dev server starts
       runRefresh("Startup refresh…");
 
-      // Refresh every 12 hours while dev server is running
+      // Refresh once a month while dev server is running
       const timer = setInterval(
-        () => runRefresh("12-hour refresh…"),
-        TWELVE_HOURS
+        () => runRefresh("Monthly refresh…"),
+        ONE_MONTH
       );
 
       server.httpServer?.on("close", () => clearInterval(timer));
