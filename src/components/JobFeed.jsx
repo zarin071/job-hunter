@@ -24,14 +24,24 @@ function tagColor(tag) {
   return "#4a4738";
 }
 
+function isIndiaJob(job) {
+  const hay = `${job.location} ${job.remoteType} ${(job.tags || []).join(" ")}`.toLowerCase();
+  return hay.includes("india");
+}
+
+// India-based roles first; original (score) order is preserved otherwise (stable sort)
+function indiaFirst(jobs) {
+  return [...jobs].sort((a, b) => Number(isIndiaJob(b)) - Number(isIndiaJob(a)));
+}
+
 export default function JobFeed({ onAddToTracker }) {
   const [added, setAdded] = useState({});
-  const top     = FEED_JOBS.filter((j) => j.tier === "top");
-  const strong  = FEED_JOBS.filter((j) => j.tier === "strong");
-  const monitor = FEED_JOBS.filter((j) => j.tier === "monitor");
+  const top     = indiaFirst(FEED_JOBS.filter((j) => j.tier === "top"));
+  const strong  = indiaFirst(FEED_JOBS.filter((j) => j.tier === "strong"));
+  const monitor = indiaFirst(FEED_JOBS.filter((j) => j.tier === "monitor"));
 
   const totalSalaryJobs = FEED_JOBS.filter((j) => j.salary !== "Unlisted").length;
-  const topPick = FEED_JOBS[0];
+  const topPick = top[0] || FEED_JOBS[0];
 
   const handleAdd = async (job) => {
     await onAddToTracker(job);
