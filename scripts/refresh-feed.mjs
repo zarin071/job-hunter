@@ -45,6 +45,14 @@ const TITLE_BLOCKERS = ["junior", "internship", "intern ", " intern"];
 
 const INDIA_BOOST = ["india", "apac", "worldwide", "anywhere", "global"];
 
+// ─── Location constraints ────────────────────────────────────────────────────────
+// Zarin is based in India. Drop US-only roles, and keep a role only if it either
+// offers visa sponsorship, is in/near Pune, or is genuinely remote-eligible from India.
+const US_ONLY_RE = /\b(usa|united states|u\.?s\.?a?)\b/;
+const SPONSOR_RE = /visa sponsor|sponsorship (?:is )?(?:available|provided|offered)|will sponsor|sponsor(?:s|ing)? (?:your )?visa|relocation (?:assistance|support|package|provided|offered)|work permit|visa support|h-?1b|skilled worker visa|tier 2/;
+const INDIA_LOCAL_RE = /\b(india|pune|maharashtra|bengaluru|bangalore|mumbai|hyderabad|chennai|delhi|gurgaon|gurugram|noida)\b/;
+const GLOBAL_REMOTE_RE = /worldwide|anywhere|global|international|apac/;
+
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function stripHtml(html = "") {
@@ -67,6 +75,14 @@ function scoreJob(j) {
 
   // Must match at least one design keyword in title
   if (!MUST_HAVE.some((kw) => title.includes(kw))) return 0;
+
+  // ── Location gate ──
+  // Drop US-only roles (unless the posting is also open worldwide).
+  if (US_ONLY_RE.test(geo) && !GLOBAL_REMOTE_RE.test(geo)) return 0;
+  // Keep only sponsorship, Pune/India-local, or India-remote-eligible roles.
+  const sponsors = SPONSOR_RE.test(text);
+  const indiaEligible = INDIA_LOCAL_RE.test(`${geo} ${text}`) || GLOBAL_REMOTE_RE.test(geo);
+  if (!sponsors && !indiaEligible) return 0;
 
   let pts = 3; // base score
 
@@ -92,6 +108,10 @@ function scoreJob(j) {
 
   // Target-archetype boost (Design Engineer / Design Systems / AI Product)
   if (TARGET_ARCHETYPE_RE.test(text)) pts++;
+
+  // Sponsorship & Pune boosts — highest-value for a relocation/India search
+  if (sponsors) pts += 2;
+  if (/\bpune\b/.test(`${geo} ${text}`)) pts++;
 
   return Math.min(pts, 10);
 }
@@ -155,7 +175,9 @@ function tagsFromJob(j) {
   if (text.includes("ai") || text.includes("llm")) t.push("AI");
   if (text.includes("react")) t.push("React");
   const geo = (j.jobGeo || "").toLowerCase();
+  if (geo.includes("pune") || geo.includes("maharashtra")) t.push("Pune");
   if (geo.includes("india") || geo.includes("apac")) t.push("India");
+  if (SPONSOR_RE.test(`${text} ${stripHtml(j.jobDescription || "")}`.toLowerCase())) t.push("Sponsorship");
   if (text.includes("founding") || text.includes("first designer")) t.push("Founding");
   const level = (j.jobLevel || "").toLowerCase();
   if (level.includes("staff") || level.includes("principal") || text.includes("staff")) t.push("Staff");
@@ -167,6 +189,7 @@ function tagsFromJob(j) {
 
 function remoteTypeFromJob(j) {
   const geo = (j.jobGeo || "").toLowerCase();
+  if (geo.includes("pune") || geo.includes("maharashtra")) return "Pune Hybrid";
   if (geo.includes("india")) return "India Remote";
   if (geo.includes("dubai") || geo.includes("uae") || geo.includes("gulf")) return "Gulf / Dubai";
   return "Global Remote";

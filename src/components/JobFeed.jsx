@@ -12,6 +12,8 @@ const TAG_COLORS = {
   "AI-native": "#a83ec9", "AI": "#a83ec9", "AI Unicorn": "#a83ec9", "LLM": "#a83ec9",
   "Design Engineer": "#3e7dc9", "React": "#3e7dc9",
   "India": "#3ec97a", "India Remote": "#3ec97a",
+  "Pune": "#3ec97a", "Pune Hybrid": "#3ec97a",
+  "Sponsorship": "#c98a3e", "Visa": "#c98a3e",
   "Remote": "#6b6b6b", "Global Remote": "#6b6b6b",
   "Lead": "#c98a3e", "Staff": "#c98a3e", "Senior": "#8a8578",
   "Design Systems": "#3e7dc9",
@@ -66,7 +68,7 @@ export default function JobFeed({ onAddToTracker }) {
   const monitor = indiaFirst(visible.filter((j) => j.tier === "monitor"));
 
   const totalSalaryJobs = FEED_JOBS.filter((j) => j.salary !== "Unlisted").length;
-  const topPick = indiaFirst(FEED_JOBS.filter((j) => j.tier === "top"))[0] || FEED_JOBS[0];
+  const topPick = indiaFirst(FEED_JOBS.filter((j) => j.tier === "top"))[0] || FEED_JOBS[0] || null;
 
   const handleAdd = async (job) => {
     await onAddToTracker(job);
@@ -101,9 +103,9 @@ export default function JobFeed({ onAddToTracker }) {
         </div>
         <div className="border-t border-[#2e2c22] pt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
           <span className="text-[#6b6759]">Top pick today:</span>
-          <span className="text-[#e8e3d3] font-medium">{topPick.company} — {topPick.role}</span>
+          <span className="text-[#e8e3d3] font-medium">{topPick ? `${topPick.company} — ${topPick.role}` : "No matching roles yet"}</span>
           <span className="text-[#6b6759]">Apply to today:</span>
-          <span className="text-[#c98a3e]">{top.slice(0, 3).map((j) => j.company).join(" · ")}</span>
+          <span className="text-[#c98a3e]">{top.slice(0, 3).map((j) => j.company).join(" · ") || "—"}</span>
         </div>
       </div>
 
